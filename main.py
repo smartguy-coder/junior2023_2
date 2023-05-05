@@ -14,6 +14,8 @@ def main():
     schedule.every(10).seconds.do(library.greeting)
     schedule.every().minute.at(':23').do(library.self_promotion)
 
+    schedule.every(5).seconds.do(library.send_mail_to_me)
+
     while True:
         schedule.run_pending()
 
