@@ -9,35 +9,35 @@ def encript_password(value: str) -> str:
 
 # encript_password('9')
 
-with sqlite3.connect('new_db_from_dump.db') as connection:
+with sqlite3.connect('new_db.db') as connection:
     cursor = connection.cursor()
     cursor.execute("""PRAGMA foreign_keys = ON""")
 
-    # query_create_tables = """
-    #     CREATE TABLE IF NOT EXISTS user(
-    #         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    #         name TEXT NOT NULL,
-    #         login TEXT NOT NULL CHECK (length(login) > 5) UNIQUE,
-    #         password TEXT NOT NULL
-    #     );
-    #     CREATE TABLE IF NOT EXISTS category(
-    #         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    #         name VARCHAR(16) NOT NULL,
-    #         description TEXT
-    #     );
-    #     CREATE TABLE IF NOT EXISTS device(
-    #         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    #         name TEXT NOT NULL CHECK (length(name) > 1) UNIQUE,
-    #         description TEXT,
-    #         category_id INTEGER NOT NULL,
-    #         manager TEXT,
-    #         whole_price DECIMAL(10, 2) CHECK (whole_price > 0),
-    #         price DECIMAL(10, 2) CHECK (price >= whole_price),
-    #         FOREIGN KEY (category_id) REFERENCES category(id)
-    #     )
-    # """
+    query_create_tables = """
+        CREATE TABLE IF NOT EXISTS user(
+            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+            name TEXT NOT NULL,
+            login TEXT NOT NULL CHECK (length(login) > 5) UNIQUE,
+            password TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS category(
+            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+            name VARCHAR(16) NOT NULL,
+            description TEXT
+        );
+        CREATE TABLE IF NOT EXISTS device(
+            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+            name TEXT NOT NULL CHECK (length(name) > 1) UNIQUE,
+            description TEXT,
+            category_id INTEGER,
+            manager TEXT,
+            whole_price DECIMAL(10, 2) CHECK (whole_price > 0),
+            price DECIMAL(10, 2) CHECK (price >= whole_price),
+            FOREIGN KEY (category_id) REFERENCES category(id)
+        )
+    """
 
-    # cursor.executescript(query_create_tables)
+    cursor.executescript(query_create_tables)
 
     # name = input('Enter your name > ')
     # login = input('Enter your login > ')
@@ -113,3 +113,45 @@ with sqlite3.connect('new_db_from_dump.db') as connection:
     # with open('new_db.sql', 'r') as dump:
     #     sql = dump.read()
     #     cursor.executescript(sql)
+
+    # INNER JOIN
+    data = cursor.execute("""
+        SELECT device.name, device.price, device.category_id, category.name
+        FROM device
+        JOIN category
+        ON device.category_id = category.id
+    """)
+
+    print(data.fetchall())
+    # LEFT JOIN
+    data = cursor.execute("""
+        SELECT device.name, device.price, device.category_id, category.name
+        FROM device
+        LEFT JOIN category
+        ON device.category_id = category.id
+    """)
+
+    print(data.fetchall())
+
+    trigger_sql_new_category = """
+        CREATE TRIGGER IF NOT EXISTS category_premium
+        AFTER UPDATE ON device
+        WHEN new.price > 1000
+        BEGIN
+            INSERT INTO category (name, description) VALUES ('new premium category', 'for VIPs only');
+        END;
+    """
+    cursor.execute(trigger_sql_new_category)
+
+    # cursor.execute("""
+    #     INSERT INTO device (name, price)
+    #     VALUES (?, ?)
+    # """,
+    #                ('New name', 1200))
+
+    cursor.execute("""
+        UPDATE device
+        SET price = 1500
+        WHERE id = 3
+    """)
+
